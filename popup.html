@@ -1,0 +1,79 @@
+<!--
+    点击插件图标后看到的页面
+-->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>CoPaste</title>
+    <style>
+        html, body {
+            width: 360px;
+            height: 480px;
+            margin: 0;
+        }
+        body {
+            box-sizing: border-box;
+            padding: 12px 16px;
+            overflow: auto;
+            font-family: sans-serif;
+        }
+        h1 {
+            margin: 0 0 12px;
+            font-size: 18px;
+        }
+        #search-input {
+            width: 100%;
+            box-sizing: border-box;
+            margin-bottom: 8px;
+            padding: 6px 8px;
+        }
+        .tag-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .tag-bar button {
+            padding: 4px 8px;
+            cursor: pointer;
+        }
+        .tag-bar button.active {
+            font-weight: bold;
+        }
+        #history-list {
+            margin: 0;
+            padding-left: 0;
+            list-style: none;
+        }
+        #history-list li {
+            margin-bottom: 10px;
+            line-height: 1.4;
+            word-break: break-word;
+        }
+        .item-tag {
+            margin-right: 6px;
+            font-size: 12px;
+        }
+        .item-time {
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>CoPaste</h1>
+    <input id="search-input" type="search" placeholder="搜索复制内容">
+    <div class="tag-bar">
+        <button type="button" data-tag="" class="active">全部</button>
+        <button type="button" data-tag="未分类">未分类</button>
+        <button type="button" data-tag="链接">链接</button>
+        <button type="button" data-tag="代码">代码</button>
+        <button type="button" data-tag="JD">JD</button>
+        <button type="button" data-tag="知识">知识</button>
+        <button type="button" data-tag="其他">其他</button>
+    </div>
+    <ul id="history-list"></ul>
+    <script src="popup.js"></script>
+</body>
+</html>
