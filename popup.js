@@ -2,7 +2,7 @@
 const historyList = document.getElementById('history-list');
 const searchInput = document.getElementById('search-input');
 const tagButtons = document.querySelectorAll('.tag-bar button');
-const TAGS = ['链接', '代码', 'JD', '知识', '其他', '未分类'];
+const TAGS = [ 'JD', '未分类'];
 
 let currentTag = '';
 

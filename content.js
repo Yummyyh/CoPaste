@@ -41,8 +41,11 @@ function saveToApi(text, time) {
 }
 
 // 处理复制事件
-function handleCopy() {
-  const text = getCopiedText();
+function handleCopy(event) {
+  let text = getCopiedText();
+  if (!text) {
+    text = (event.clipboardData?.getData('text/plain') || '').trim();
+  }
   if (!text) return;
   saveToHistory(text);
 }
