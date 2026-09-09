@@ -7,6 +7,7 @@ import time
 import pymysql
 
 from schemas import Item, ItemCreate
+from datetime import date, timedelta
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
 MYSQL_PORT = int(os.getenv("MYSQL_PORT", "3306"))
@@ -135,10 +136,24 @@ def add_item(data: ItemCreate) -> Item:
     return Item(id=item_id, text=data.text, time=data.time, tag=tag)
 
 # 获取所有复制记录
-def get_all_items(q: str | None = None, tag: str | None = None) -> list[Item]:
+def get_all_items(
+    q: str | None = None,
+    tag: str | None = None,
+    sort: str = "newest",
+    start_date: date | None = None,
+    end_date: date | None = None,
+) -> list[Item]:
     _ensure_ready()
-    sql = "SELECT id, text, time, tag FROM items WHERE 1=1"
-    params: list[str] = []
+
+    if sort not in {"newest", "oldest"}:
+        raise ValueError("invalid sort")
+
+    sql = """
+        SELECT id, text, time, tag, created_at
+        FROM items
+        WHERE 1=1
+    """
+    params: list[str | date] = []
 
     # 加入动态拼接查询条件
     if q:
@@ -149,9 +164,15 @@ def get_all_items(q: str | None = None, tag: str | None = None) -> list[Item]:
         # 精确查询
         sql += " AND tag = %s"
         params.append(tag)
+    if start_date:
+        sql += " AND created_at >= %s"
+        params.append(start_date)
+    if end_date:
+        sql += " AND created_at <= %s"
+        params.append(end_date + timedelta(days=1))  # 包含结束日期
 
-    # 按ID降序排序
-    sql += " ORDER BY id DESC"
+    order = "DESC" if sort == "newest" else "ASC"
+    sql += f" ORDER BY created_at {order}, id {order}"
 
     conn = _connect(with_database=True)
     try:
@@ -166,9 +187,39 @@ def get_all_items(q: str | None = None, tag: str | None = None) -> list[Item]:
 
     # 返回查询结果
     return [
-        Item(id=row["id"], text=row["text"], time=row["time"], tag=row["tag"])
+        Item(
+            id=row["id"],
+            text=row["text"],
+            time=row["time"],
+            tag=row["tag"],
+            created_at=row["created_at"],
+        )
         for row in rows
     ]
+
+
+def get_item(item_id: int) -> Item | None:
+    _ensure_ready()
+    conn = _connect(with_database=True)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, text, time, tag, created_at FROM items WHERE id = %s",
+                (item_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return None
+    return Item(
+        id=row["id"],
+        text=row["text"],
+        time=row["time"],
+        tag=row["tag"],
+        created_at=row["created_at"],
+    )
 
 # 更新复制记录的标签
 def update_item_tag(item_id: int, tag: str) -> Item | None:
