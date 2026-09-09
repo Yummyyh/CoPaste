@@ -19,3 +19,17 @@ export async function analyzeJD(jdContent) {
 
   return res.json()
 }
+
+export async function analyzeItem(itemId) {
+  const res = await fetch(`${API_BASE_URL}/api/items/${itemId}/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  })
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}))
+    throw new Error(error.detail || `分析服务错误: ${res.status} ${res.statusText}`)
+  }
+
+  return res.json()
+}

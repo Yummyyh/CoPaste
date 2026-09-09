@@ -252,3 +252,10 @@ React 页面读取后端岗位和分析结果。
 ## License
 
 本项目目前未声明开源许可证，仅用于学习和项目演示。
+
+9.9
+今日已完成：
+在 CoPaste popup 中选择一条 JD，点击“分析选中项”后打开 JD Insight。
+JD Insight 通过 itemId 调用 /api/items/{id}/analyze。
+Step 1 使用真实 Dify 分析结果，Step 2 和 Step 3 暂时使用 mock 数据。
+分析过程中显示加载状态，失败时显示错误信息。

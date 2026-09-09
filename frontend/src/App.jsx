@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import TopCompanionBar from './components/TopCompanionBar'
 import NavBar from './components/NavBar'
 import InputCard from './components/InputCard'
@@ -6,23 +6,43 @@ import LoadingOverlay from './components/LoadingOverlay'
 import Step1Result from './components/Step1Result'
 import Step2Result from './components/Step2Result'
 import Step3Result from './components/Step3Result'
-import { analyzeJD } from './services/difyApi'
+import { analyzeItem, analyzeJD } from './services/difyApi'
 import { mockStep1, mockStep2, mockStep3 } from './data/mockData'
 
 export default function App() {
+  // useState：React状态，变量变，页面自动刷新
+  const itemId = new URLSearchParams(window.location.search).get('itemId')
   const [jdText, setJdText] = useState('')
   const [activeTab, setActiveTab] = useState('粘贴JD文本')
-  const [step, setStep] = useState(-1) // -1 = input, 0 = loading, 1/2/3 = result steps
+  const [step, setStep] = useState(() => (
+    itemId && /^\d+$/.test(itemId) ? 0 : -1
+  )) // -1输入页，0加载中，1/2/3结果阶段
   const [stepResults, setStepResults] = useState({})
+  const [analysisError, setAnalysisError] = useState('')
+
+  // 页面加载后自动分析
+  useEffect(() => {
+    if (!itemId || !/^\d+$/.test(itemId)) return
+
+    analyzeItem(itemId)
+      .then((outputs) => {
+        setStepResults({ step1: outputs, step2: mockStep2, step3: mockStep3 })
+        setStep(1)
+      })
+      .catch((error) => {
+        setAnalysisError(error.message || '分析失败，请检查后端服务')
+      })
+  }, [itemId])
 
   const handleSubmit = async () => {
     if (!jdText.trim()) return
-    setStep(0)
+    setStep(0) // 状态切到 加载中
+    setAnalysisError('')
     try {
       const outputs = await analyzeJD(jdText)
       setStepResults({ step1: outputs, step2: mockStep2, step3: mockStep3 })
     } catch (err) {
-      console.warn('Dify API 调用失败，降级使用 mock 数据:', err)
+      console.warn('Dify API 调用失败，降级使用 mock 数据:', err) //？？
       await new Promise((r) => setTimeout(r, 1500))
       setStepResults({ step1: mockStep1, step2: mockStep2, step3: mockStep3 })
     }
@@ -33,6 +53,7 @@ export default function App() {
     setStep(-1)
     setJdText('')
     setStepResults({})
+    setAnalysisError('')
   }
 
   return (
@@ -71,7 +92,19 @@ export default function App() {
           </div>
         )}
 
-        {step === 0 && <LoadingOverlay />}
+        {step === 0 && !analysisError && <LoadingOverlay />}
+
+        {step === 0 && analysisError && (
+          <div className="pt-24 text-center animate-fade-in">
+            <p className="text-red mb-6">{analysisError}</p>
+            <button
+              onClick={handleReset}
+              className="px-6 py-3 rounded-btn bg-text text-bg font-medium cursor-pointer"
+            >
+              返回首页
+            </button>
+          </div>
+        )}
 
         {step === 1 && stepResults.step1 && (
           <Step1Result

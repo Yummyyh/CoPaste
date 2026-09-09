@@ -41,6 +41,24 @@
         .tag-bar button.active {
             font-weight: bold;
         }
+        .selection-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        #analyze-selected {
+            padding: 6px 10px;
+            cursor: pointer;
+        }
+        #analyze-selected:disabled {
+            cursor: not-allowed;
+            opacity: 0.55;
+        }
+        #selection-hint {
+            color: #666;
+            font-size: 12px;
+        }
         #history-list {
             margin: 0;
             padding-left: 0;
@@ -51,6 +69,14 @@
             line-height: 1.4;
             word-break: break-word;
         }
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .item-checkbox {
+            flex: 0 0 auto;
+        }
         .item-tag {
             margin-right: 6px;
             font-size: 12px;
@@ -58,6 +84,10 @@
         .item-time {
             color: #666;
             font-size: 12px;
+        }
+        .item-content {
+            margin-top: 4px;
+            white-space: pre-wrap;
         }
     </style>
 </head>
@@ -68,6 +98,10 @@
         <button type="button" data-tag="" class="active">全部</button>
         <button type="button" data-tag="未分类">未分类</button>
         <button type="button" data-tag="JD">JD</button>
+    </div>
+    <div class="selection-toolbar">
+        <button id="analyze-selected" type="button" disabled>分析选中项</button>
+        <span id="selection-hint">请选择一条 JD</span>
     </div>
     <ul id="history-list"></ul>
     <script src="popup.js"></script>
