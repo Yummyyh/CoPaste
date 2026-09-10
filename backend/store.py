@@ -6,7 +6,7 @@ import time
 
 import pymysql
 
-from schemas import Item, ItemCreate
+from schemas import Item, ItemCreate, ResumeVersion, ResumeVersionCreate
 from datetime import date, timedelta
 
 MYSQL_HOST = os.getenv("MYSQL_HOST", "127.0.0.1")
@@ -109,6 +109,18 @@ def _ensure_ready():
                 )
                 """
             )
+            cur.execute(
+                """
+                CREATE TABLE IF NOT EXISTS resume_versions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    name VARCHAR(128) NOT NULL,
+                    content LONGTEXT NOT NULL,
+                    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+                        ON UPDATE CURRENT_TIMESTAMP
+                )
+                """
+            )
             _migrate_v3(cur)
         conn.commit()
     finally:
@@ -197,7 +209,7 @@ def get_all_items(
         for row in rows
     ]
 
-
+# 获取单条复制记录
 def get_item(item_id: int) -> Item | None:
     _ensure_ready()
     conn = _connect(with_database=True)
@@ -243,7 +255,7 @@ def update_item_tag(item_id: int, tag: str) -> Item | None:
     return Item(id=row["id"], text=row["text"], time=row["time"], tag=row["tag"])
 
 
-# 只改仍是「未分类」的记录，避免盖掉你刚手动改的标签
+# 更新复制记录的标签（仅当原标签为“未分类”时才更新）
 def update_item_tag_if_unclassified(item_id: int, tag: str) -> None:
     if tag not in ALLOWED_TAGS:
         return
@@ -258,3 +270,75 @@ def update_item_tag_if_unclassified(item_id: int, tag: str) -> None:
             )
     finally:
         conn.close()
+
+
+def get_latest_resume() -> ResumeVersion | None:
+    _ensure_ready()
+    conn = _connect(with_database=True)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, name, content, created_at, updated_at
+                FROM resume_versions
+                ORDER BY updated_at DESC, id DESC
+                LIMIT 1
+                """
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return None
+    return ResumeVersion(**row)
+
+# 读取指定版本简历
+def get_resume(resume_id: int) -> ResumeVersion | None:
+    _ensure_ready()
+    conn = _connect(with_database=True)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT id, name, content, created_at, updated_at
+                FROM resume_versions
+                WHERE id = %s
+                """,
+                (resume_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        return None
+    return ResumeVersion(**row)
+
+
+def save_resume(data: ResumeVersionCreate) -> ResumeVersion:
+    _ensure_ready()
+    conn = _connect(with_database=True)
+    try:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                INSERT INTO resume_versions (name, content)
+                VALUES (%s, %s)
+                """,
+                (data.name.strip(), data.content.strip()),
+            )
+            resume_id = cur.lastrowid
+            cur.execute(
+                """
+                SELECT id, name, content, created_at, updated_at
+                FROM resume_versions
+                WHERE id = %s
+                """,
+                (resume_id,),
+            )
+            row = cur.fetchone()
+    finally:
+        conn.close()
+
+    return ResumeVersion(**row)

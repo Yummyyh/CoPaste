@@ -11,7 +11,14 @@ from fastapi.middleware.cors import CORSMiddleware
 load_dotenv(Path(__file__).with_name(".env"))
 
 from dify_service import DifyServiceError, analyze_jd
-from schemas import AnalyzeRequest, Item, ItemCreate, ItemTagUpdate
+from schemas import (
+    AnalyzeRequest,
+    Item,
+    ItemCreate,
+    ItemTagUpdate,
+    ResumeVersion,
+    ResumeVersionCreate,
+)
 import store
 
 logger = logging.getLogger(__name__)
@@ -27,6 +34,23 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+def _get_resume_content(resume_id: int | None) -> str:
+    resume = store.get_resume(resume_id) if resume_id else store.get_latest_resume()
+    if resume_id and resume is None:
+        raise HTTPException(status_code=404, detail="简历版本不存在")
+    return resume.content if resume else ""
+
+
+@app.get("/api/resumes/latest", response_model=ResumeVersion | None)
+def get_latest_resume() -> ResumeVersion | None:
+    return store.get_latest_resume()
+
+
+@app.post("/api/resumes", response_model=ResumeVersion, status_code=201)
+def create_resume(data: ResumeVersionCreate) -> ResumeVersion:
+    return store.save_resume(data)
+
 # 添加复制记录
 @app.post("/api/items", response_model=Item, status_code=201)
 def create_item(data: ItemCreate, background_tasks: BackgroundTasks) -> Item:
@@ -37,7 +61,8 @@ def create_item(data: ItemCreate, background_tasks: BackgroundTasks) -> Item:
 @app.post("/api/analyze", response_model=dict)
 def analyze_text(data: AnalyzeRequest ) -> dict:
     try:
-        return analyze_jd(data.text)
+        resume_content = _get_resume_content(data.resume_id)
+        return analyze_jd(data.text, resume_content, data.url)
     except DifyServiceError as exc:
         logger.exception("Dify analysis failed for /api/analyze: %s", exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -45,12 +70,13 @@ def analyze_text(data: AnalyzeRequest ) -> dict:
 
 # 分析数据库里的记录
 @app.post("/api/items/{item_id}/analyze", response_model=dict)
-def analyze_item(item_id: int) -> dict:
+def analyze_item(item_id: int, resume_id: int | None = Query(default=None, gt=0)) -> dict:
     item = store.get_item(item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="记录不存在")
     try:
-        return analyze_jd(item.text)
+        resume_content = _get_resume_content(resume_id)
+        return analyze_jd(item.text, resume_content)
     except DifyServiceError as exc:
         logger.exception("Dify analysis failed for item %s: %s", item_id, exc)
         raise HTTPException(status_code=502, detail=str(exc)) from exc

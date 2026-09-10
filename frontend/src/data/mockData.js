@@ -7,25 +7,31 @@ export const companionTexts = [
 export const mockStep1 = {
   jobTitle: '高级前端工程师',
   company: '某科技公司',
-  actualWork:
+  what:
     '负责产品前端架构设计与核心模块开发，维护团队组件库，与产品和设计协作将UI稿落地为高质量交互，参与技术选型与代码评审。团队目前8人，前端3人，这个岗位将承担部分技术Leader职责。',
-  hardRequirements: [
-    { text: 'React/Vue 3年以上', matched: true },
-    { text: 'TypeScript 熟练', matched: true },
-    { text: '计算机相关本科', matched: true },
+  hardReq: [
+    'React/Vue 3年以上',
+    'TypeScript 熟练',
+    '计算机相关本科',
   ],
-  bonusItems: [
-    { text: '有组件库开发经验', matched: true },
-    { text: '了解 Node.js 服务端开发', matched: false },
-    { text: '有性能优化实践经验', matched: true },
+  bonus: [
+    '有组件库开发经验',
+    '了解 Node.js 服务端开发',
+    '有性能优化实践经验',
   ],
-  subtext:
-    '「熟悉前沿技术」其实是在说：希望你保持学习习惯，能跟得上团队技术迭代的节奏。JD里写5条要求，实际面试时真正卡人的可能只有2条。',
-  advice: {
-    level: 'recommend',
-    reason:
-      '岗位要求与你的技能匹配度较高，硬性门槛全部满足，加分项也命中2/3。整体来看这是一份值得认真准备的机会，但行业背景差异需要在简历和面试中主动弥合。',
-  },
+  subtext: [
+    {
+      keyword: '熟悉前沿技术',
+      meaning:
+        '其实是在说：希望你保持学习习惯，能跟得上团队技术迭代的节奏。',
+    },
+    {
+      keyword: 'JD里写5条要求',
+      meaning: '实际面试时真正卡人的可能只有2条。',
+    },
+  ],
+  verdict:
+    '值得投。岗位要求与你的技能匹配度较高，硬性门槛全部满足，加分项也命中2/3。整体来看这是一份值得认真准备的机会，但行业背景差异需要在简历和面试中主动弥合。',
 }
 
 export const mockStep2 = {

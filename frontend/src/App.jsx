@@ -6,19 +6,32 @@ import LoadingOverlay from './components/LoadingOverlay'
 import Step1Result from './components/Step1Result'
 import Step2Result from './components/Step2Result'
 import Step3Result from './components/Step3Result'
-import { analyzeItem, analyzeJD } from './services/difyApi'
-import { mockStep1, mockStep2, mockStep3 } from './data/mockData'
+import { analyzeItem, analyzeJD, getLatestResume, saveResume } from './services/difyApi'
 
 export default function App() {
   // useState：React状态，变量变，页面自动刷新
   const itemId = new URLSearchParams(window.location.search).get('itemId')
   const [jdText, setJdText] = useState('')
-  const [activeTab, setActiveTab] = useState('粘贴JD文本')
   const [step, setStep] = useState(() => (
     itemId && /^\d+$/.test(itemId) ? 0 : -1
   )) // -1输入页，0加载中，1/2/3结果阶段
   const [stepResults, setStepResults] = useState({})
   const [analysisError, setAnalysisError] = useState('')
+  const [resumeId, setResumeId] = useState(null)
+  const [resumeName, setResumeName] = useState('')
+  const [resumeContent, setResumeContent] = useState('')
+  const [resumeStatus, setResumeStatus] = useState('')
+
+  useEffect(() => {
+    getLatestResume()
+      .then((resume) => {
+        if (!resume) return
+        setResumeId(resume.id)
+        setResumeName(resume.name)
+        setResumeContent(resume.content)
+      })
+      .catch(() => setResumeStatus('简历读取失败'))
+  }, [])
 
   // 页面加载后自动分析
   useEffect(() => {
@@ -26,7 +39,11 @@ export default function App() {
 
     analyzeItem(itemId)
       .then((outputs) => {
-        setStepResults({ step1: outputs, step2: mockStep2, step3: mockStep3 })
+        setStepResults({
+          step1: outputs,
+          step2: outputs.step2,
+          step3: outputs.step3,
+        })
         setStep(1)
       })
       .catch((error) => {
@@ -39,14 +56,30 @@ export default function App() {
     setStep(0) // 状态切到 加载中
     setAnalysisError('')
     try {
-      const outputs = await analyzeJD(jdText)
-      setStepResults({ step1: outputs, step2: mockStep2, step3: mockStep3 })
+      const outputs = await analyzeJD(jdText, resumeId)
+      setStepResults({
+        step1: outputs,
+        step2: outputs.step2,
+        step3: outputs.step3,
+      })
     } catch (err) {
-      console.warn('Dify API 调用失败，降级使用 mock 数据:', err) //？？
-      await new Promise((r) => setTimeout(r, 1500))
-      setStepResults({ step1: mockStep1, step2: mockStep2, step3: mockStep3 })
+      setAnalysisError(err.message || '分析失败，请检查后端服务')
+      return
     }
     setStep(1)
+  }
+
+  const handleSaveResume = async () => {
+    setResumeStatus('保存中…')
+    try {
+      const resume = await saveResume(resumeName, resumeContent)
+      setResumeId(resume.id)
+      setResumeName(resume.name)
+      setResumeContent(resume.content)
+      setResumeStatus('已保存')
+    } catch (error) {
+      setResumeStatus(error.message || '保存失败')
+    }
   }
 
   const handleReset = () => {
@@ -85,8 +118,12 @@ export default function App() {
               value={jdText}
               onChange={setJdText}
               onSubmit={handleSubmit}
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
+              resumeName={resumeName}
+              resumeContent={resumeContent}
+              onResumeNameChange={setResumeName}
+              onResumeContentChange={setResumeContent}
+              onSaveResume={handleSaveResume}
+              resumeStatus={resumeId ? `已读取版本 #${resumeId}，${resumeStatus}` : resumeStatus}
             />
 
           </div>

@@ -22,7 +22,7 @@ DIFY_API_URL = os.getenv(
 DIFY_API_KEY = os.getenv("DIFY_API_KEY")
 
 # 调用Dify工作流分析JD文本，返回字典
-def analyze_jd(jd_content: str) -> dict:
+def analyze_jd(jd_content: str, resume_content: str = "", url: str = "") -> dict:
     if not DIFY_API_KEY:
         raise DifyServiceError("DIFY_API_KEY is not configured on the backend")
 
@@ -34,7 +34,11 @@ def analyze_jd(jd_content: str) -> dict:
                 "Content-Type": "application/json",
             },
             json={
-                "inputs": {"JD_content": jd_content},
+                "inputs": {
+                    "JD_content": jd_content,
+                    "URL": url,
+                    "Resume_content": resume_content,
+                },
                 "response_mode": "blocking",
                 "user": "copaste-user",
             },
